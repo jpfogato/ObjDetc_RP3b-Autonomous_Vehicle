@@ -88,4 +88,4 @@ M2pwm.start(0) #define o dutycycle inicial no motor 2 em 0%
 # Teste 1: ambos os motores para frente ate que alvo esteja a menos de 10cm
 # Remova o comentario das proximas linhas para chamar este modulo
 
- import debug8_1
+ import Modulos/debug8_1
