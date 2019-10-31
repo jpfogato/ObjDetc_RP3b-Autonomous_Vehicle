@@ -19,7 +19,6 @@
 # importacao das bibliotecas necessarias para a execucao do programa,
 # configuracao dos pinos de entrada e saida do Raspberry Pi,
 # definicao da compressao da imagem recebida pela camera (HxV pixels)
-#
 
 #import os
 #import cv2
