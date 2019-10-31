@@ -84,10 +84,6 @@ M2pwm.start(0) #define o dutycycle inicial no motor 2 em 0%
 
 
 
-
-
-
-
 # ----------------------------------------------------------------
 # MODULO 8: TESTES E DEBUGGING
 # Na versao final esse modulo deve estar comentado
