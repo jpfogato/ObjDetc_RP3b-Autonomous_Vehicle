@@ -1,3 +1,48 @@
+import RPi.GPIO as GPIO
+import time
+
+GPIO.setmode(GPIO.BCM) #trabalha com os pinos fisicos atraves da nomenclatura da GPIO
+
+# Pinos do sensor HC-SR04
+TRIGGER = 17 #GPIO 17 - PINO 11 - usado como fonte de TRIGGER
+ECHO = 4 #GPIO 04 - PINO 07 - usado como recebedor do pulso
+
+# Pinos utilizados pelo MOTOR 1
+M1Frente = 25 #GPIO 25 - PINO 22
+M1Tras = 24 #GPIO 24 - PINO 18
+M1Controle = 23 #GPIO 23 - PINO 16
+
+# Pinos utilizados pelo MOTOR 2
+M2Frente = 20 #GPIO 20 - PINO 38
+M2Tras = 16 #GPIO 16 - PINO 36
+M2Controle = 21 #GPIO 21 - PINO 40 *** PODE SER NECESSARIO ALTERAR - SUGESTAO: GPIO 18 PINO 12
+
+# Setup dos pinos do sensor HC-SR04
+GPIO.setup(TRIGGER,GPIO.OUT) #define o pino TRIGGER como SAIDA
+GPIO.setup(ECHO,GPIO.IN) #define o pino ECHO como ENTRADA
+GPIO.output(TRIGGER,GPIO.LOW) #define a SAIDA do pino TRIGGER como BAIXA
+
+# Setup dos pinos do MOTOR 1
+GPIO.setup(M1Frente,GPIO.OUT) #define o pino M1Frente como SAIDA
+GPIO.setup(M1Tras,GPIO.OUT) #define o pino M1Tras como SAIDA
+GPIO.setup(M1Controle,GPIO.OUT) #define o pino M1PWM como SAIDA
+GPIO.output(M1Frente,GPIO.LOW) #define a SAIDA do pino M1Frente como BAIXA
+GPIO.output(M1Tras,GPIO.LOW) #define a SAIDA do pino M1Tras como BAIXA
+M1pwm=GPIO.PWM(M1Controle,50) #define o pino M1Controle como saida para um PWM de 50Hz
+
+# Setup dos pinos do MOTOR 2
+GPIO.setup(M2Frente,GPIO.OUT) #define o pino M2Frente como SAIDA
+GPIO.setup(M2Tras,GPIO.OUT) #define o pino M2Tras como SAIDA
+GPIO.setup(M2Controle,GPIO.OUT) #define o pino M2PWM como SAIDA
+GPIO.output(M2Frente,GPIO.LOW) #define a SAIDA do pino M2Frente como BAIXA
+GPIO.output(M2Tras,GPIO.LOW) #define a SAIDA do pino M2Tras como BAIXA
+M2pwm=GPIO.PWM(M2Controle,50) #define o pino M2Controle como saida para um PWM de 50Hz
+
+# Inicio do PWM nos motores
+M1pwm.start(0) #define o dutycycle inicial no motor 1 em 0%
+M2pwm.start(0) #define o dutycycle inicial no motor 2 em 0%
+
+
 # Modulo de testes para validar integracao entre motores e sensor de ultrasom
 
 print("Modulo de Debug e Teste 8")
@@ -5,21 +50,23 @@ print("teste 1: ambos motores para frente ate que alvo esteja a menos de 10cm")
 print("Para iniciar digite 's' ")
 print("para abortar o teste digite 'n'")
 
+distancia=10000
+
 while(1):
 
     entrada=input() #espera a entrada do usuario
 
     if entrada=='s': #caso o usuario digite S o progra e iniciado
-        GPIO.output(M1Frente.HIGH) #motor 1 para frente
-        GPIO.output(M1Tras.LOW)
-        GPIO.output(M2Frente.HIGH) #motor 2 para frente
-        GPIO.output(M2Tras.LOW)
+        GPIO.output(M1Frente,GPIO.HIGH) #motor 1 para frente
+        GPIO.output(M1Tras,GPIO.LOW)
+        GPIO.output(M2Frente,GPIO.HIGH) #motor 2 para frente
+        GPIO.output(M2Tras,GPIO.LOW)
         M1pwm.ChangeDutyCycle(50) #define o dutycycle no motor 1 em 50%
         M2pwm.ChangeDutyCycle(50) #define o dutycycle no motor 2 em 50%
         while distancia>=10: #enquanto a distancia for maior ou igual a 10
-            GPIO.output(TRIGGER.HIGH) #define o valor de TRIGGER como ALTO...
+            GPIO.output(TRIGGER,GPIO.HIGH) #define o valor de TRIGGER como ALTO...
             time.sleep(0.000001) #...durante apenas 1us para que o sensor envie um pulso de 40kHz
-            GPIO.output(TRIGGER.LOW) #finaliza o pulso
+            GPIO.output(TRIGGER,GPIO.LOW) #finaliza o pulso
             while GPIO.input(ECHO)==0:
                 pulse_start=time.time() #inicia uma contagem que se encerra na borda de SUBIDA do pino ECHO
             while GPIO.input(ECHO)==1:
@@ -52,3 +99,4 @@ while(1):
         print("Digite a letra correta")
         print("Para iniciar digite 's' ")
         print("Para abortar o teste digite 'n'")
+
