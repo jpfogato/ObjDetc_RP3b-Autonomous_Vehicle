@@ -66,7 +66,7 @@ GPIO.output(TRIGGER,GPIO.LOW) #define a SAIDA do pino TRIGGER como BAIXA
 # Setup dos pinos do MOTOR 1
 GPIO.setup(M1Frente,GPIO.OUT) #define o pino M1Frente como SAIDA
 GPIO.setup(M1Tras,GPIO.OUT) #define o pino M1Tras como SAIDA
-GPIO.setup(M1PWM,GPIO.OUT) #define o pino M1PWM como SAIDA
+GPIO.setup(M1Controle,GPIO.OUT) #define o pino M1PWM como SAIDA
 GPIO.output(M1Frente,GPIO.LOW) #define a SAIDA do pino M1Frente como BAIXA
 GPIO.output(M1Tras,GPIO.LOW) #define a SAIDA do pino M1Tras como BAIXA
 M1pwm=GPIO.PWM(M1Controle,50) #define o pino M1Controle como saida para um PWM de 50Hz
@@ -74,7 +74,7 @@ M1pwm=GPIO.PWM(M1Controle,50) #define o pino M1Controle como saida para um PWM d
 # Setup dos pinos do MOTOR 2
 GPIO.setup(M2Frente,GPIO.OUT) #define o pino M2Frente como SAIDA
 GPIO.setup(M2Tras,GPIO.OUT) #define o pino M2Tras como SAIDA
-GPIO.setup(M2PWM,GPIO.OUT) #define o pino M2PWM como SAIDA
+GPIO.setup(M2Controle,GPIO.OUT) #define o pino M2PWM como SAIDA
 GPIO.output(M2Frente,GPIO.LOW) #define a SAIDA do pino M2Frente como BAIXA
 GPIO.output(M2Tras,GPIO.LOW) #define a SAIDA do pino M2Tras como BAIXA
 M2pwm=GPIO.PWM(M2Controle,50) #define o pino M2Controle como saida para um PWM de 50Hz
