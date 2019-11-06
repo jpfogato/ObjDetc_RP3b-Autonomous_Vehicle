@@ -132,7 +132,7 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
 category_index = label_map_util.create_category_index(categories)
 
 # carrega o modelo do TensorFlow para a memoria
-with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
+#with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
@@ -242,6 +242,13 @@ def detector_placas(frame):
             detected_pare = False
             detected_vir_dir = False
             detected_vir_esq = False
+
+    return frame
+
+def movimento(detected_pare, detected_vir_dir, detected_vir_esq)
+    
+
+
 
 
 # A_DESENVOLVER:
