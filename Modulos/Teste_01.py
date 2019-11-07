@@ -61,11 +61,9 @@ while(1):
             distancia = round((duracao_pulso * 17000),2) #calcula a distancia em cm e arredonda em 2 casas
             print("Distancia medida: ", distancia," cm") #informa a distancia pode ser comentado
         GPIO.output(m1Ativo,GPIO.LOW) #motor 1 parado
-        GPIO.output(M1Tras,GPIO.LOW)
-        GPIO.output(pinoDireita,GPIO.LOW) #motor 2 parado
-        GPIO.output(pinoEsquerda,GPIO.LOW)
+        #GPIO.output(pinoDireita,GPIO.LOW) #motor 2 parado
+        #GPIO.output(pinoEsquerda,GPIO.LOW)
         m1pwm.ChangeDutyCycle(0) #desativa o dutycycle do motor 1
-        M2pwm.ChangeDutyCycle(0) #desativa o dutycycle do motor 2
         print("Motores desativados")
 
     elif entrada=='n': #caso o usuario digite N o programa e interrompido
