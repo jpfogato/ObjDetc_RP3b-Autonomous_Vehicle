@@ -1,26 +1,11 @@
 # software disponivel em github.com/jpfogato
 #
-# O objetivo do projeto e' ter um veiculo autonomo controlado por visao de
-# maquina, com auxilio de rede neural implementada no tensorflow, usando como
-# plataforma o Raspberry Pi
-#
-# Execucao do software:
-# 1 - Setup da aplicacao
-# 2 - Configuracao do TensorFlow e aquisicao das imagens
-# 3 - Insercao da imagem adquirida em tempo real no algoritimo de detecao
-# 4 - Identificacao da acao de comando por imagem
-# 5 - Identificacao da acao de comando por distancia
-# 6 - Conjuncao booleana (imagem E distancia) para identificacao de acao
-# 7 - Execucao da manobra, retorno ao modulo 2
-#
-# Disclaimer: A logica do programa foi elaborada inteiramente pelo gurpo mas
-# diversos exemplos foram consultados. O mais influente deles pode ser encontrado em:
-# https://github.com/EdjeElectronics/TensorFlow-Object-Detection-on-the-Raspberry-Pi
+# Este software controla um veiculo autonomo controlado por visao de maquina, com auxilio de rede neural
+# implementada no tensorflow, usando como plataforma o Raspberry Pi
 #
 # Importante:
 # O script deve rodar diretamente na pasta "object_detection" dentro do Raspberry
-# Para buscar por partes inacabadas procure por (crtl+f) "A_DESENVOLVER"
-
+#
 # -----------------------------------------------------------------------------
 # SETUP DA APLICACAO
 # Neste modulo e feita a:
@@ -34,22 +19,23 @@ import numpy as np #biblioteca de funcoes e operadores matematicos
 from picamera.array import PiRGBArray #biblioteca com funcoes  de processamento de imagem da PiCam
 from picamera import PiCamera #bliblioteca com funcoes da PiCam
 import tensorflow as tf #biblioteca com funcoes do TensorFlow
-import argparse #
-import sys
 #import tensorflow.compat.v1 as tf #tente isso se houver problemas de compatibilidade entre versoes do TF
 #tf.disable_v2_behavior()
+import sys
 import RPi.GPIO as GPIO
 import time
 
-GPIO.setmode(GPIO.BCM) #trabalha com os pinos fisicos atraves da nomenclatura da GPIO
+#trabalha com os pinos fisicos atraves da nomenclatura da GPIO
+GPIO.setmode(GPIO.BCM)
 
-# Pinos do sensor HC-SR04
+# Pinos do sensor HC-SR04 e variaveis utilizadas
 TRIGGER = 17 #GPIO 17 - PINO 11 - usado como fonte de TRIGGER
 ECHO = 4 #GPIO 04 - PINO 07 - usado como recebedor do pulso
 # Setup dos pinos do sensor HC-SR04
 GPIO.setup(TRIGGER,GPIO.OUT) #define o pino TRIGGER como SAIDA
 GPIO.setup(ECHO,GPIO.IN) #define o pino ECHO como ENTRADA
 GPIO.output(TRIGGER,GPIO.LOW) #define a SAIDA do pino TRIGGER como BAIXA
+duracao_do_pulso = 0
 
 # Pinos utilizados pelo MOTOR 1
 m1Ativo = 25 #GPIO 25 - PINO 22
@@ -82,7 +68,87 @@ sys.path.append('..')
 from utils import label_map_util #funcoes de verificacao de labels
 from utils import visualization_utils as vis_util #funcoes de vizualizacao
 
-# -----------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------------------------------
+# FUNCOES:
+
+# Funcao de identificacao de distancia:
+# essa funcao dispara um sinal a partir do pino TRIGGER e aguarda uma resposta no pino ECHO
+# apos isso, conta o tempo do pulso no pino ECHO e determina a distancia em cm
+def indentifica_distancia():
+    # essa funcao ativa o pino TRIGGER
+    GPIO.output(TRIGGER, True)
+    # durante apenas 1us
+    time.sleep(0.000001)
+    # depois desliga o pino TRIGGER
+    GPIO.output(TRIGGER, False)
+    # e define que enquanto ECHO possuir um valor logico BAIXO
+    while GPIO.input(ECHO) == 0:
+        # conta o tempo para usar como timestamp
+        inicio_do_pulso = time.time()
+        # assim que o valor logico de ECHO muda para ALTO
+    while GPIO.input(ECHO) == 1:
+        # o software conta o tempo enquanto esse pulso se manter em nivel logico ALTO
+        fim_do_pulso = time.time()
+    # apos isso, o software faz a contagem do fim do pulso MENOS o inicio do pulso e determina a duracao
+    duracao_do_pulso = fim_do_pulso - inicio_do_pulso
+    # para entao calcular a distancia em cm
+    distancia = duracao_do_pulso * 17000
+    # arredonda o valor em 2 casas decimais por conveniencia
+    distancia = round(distancia, 2)
+    # e devolve o valor para o uso subsequente
+    return distancia
+
+# Funcao seguir em frente
+# essa funcao faz o veiculo andar em linha reta
+# usar como argumentos: "duty cycle"
+def seguir_em_frente(duty_cycle):
+    #Desativa os dois pinos do motor que controla a direcao
+    GPIO.output(pinoEsquerda, GPIO.LOW)
+    GPIO.output(pinoDireita, GPIO.LOW)
+    # Ativa o motor 1 com o duty cycle informado
+    GPIO.output(m1Ativo, GPIO.HIGH)
+    m1pwm.ChangeDutyCycle(duty_cycle)
+
+# Funcao estreitar as rodas
+# essa funcao faz as rodas da frente se reorientarem
+def endireitar_rodas():
+    # Desativa o pinoEsquerda do motor 2
+    GPIO.output(pinoEsquerda, GPIO.LOW)
+    # Desativa o pinoDireita do motor 2
+    GPIO.output(pinoDireita, GPIO.LOW)
+
+# Funcao virar a esquerda
+# essa funcao faz o veiculo virar para a esquerda
+def virar_a_esquerda():
+    # Aciona o pinoEsquerda do motor 2
+    GPIO.output(pinoEsquerda, GPIO.HIGH)
+    # Desativa o pinoDireita do motor 2
+    GPIO.output(pinoDireita, GPIO.LOW)
+
+# Funcao virar a direita
+# essa funcao faz o veiculo virar para a esquerda
+def virar_a_direita():
+    # Aciona o pinoEsquerda do motor 2
+    GPIO.output(pinoEsquerda, GPIO.LOW)
+    # Desativa o pinoDireita do motor 2
+    GPIO.output(pinoDireita, GPIO.HIGH)
+
+# Funcao de movimentacao para frente ate estar em frente a placa
+# essa funcao faz o veiculo andar para frente ate que esteja a uma determinada distancia do alvo
+# usar como argumentos: "Distancia maxima ate o alvo", "duty cycle"
+def andar_para_frente(distancia_max_ate_alvo,duty_cycle):
+    # Aciona o motor 1
+    GPIO.output(m1Ativo, GPIO.HIGH)
+    # define o duty cycle no motor 1
+    m1pwm.ChangeDutyCycle(duty_cycle)
+    # se a distancia max ate o alvo >= distancia medida pelo sensor de ultrassom
+    if distancia_max_ate_alvo >= indentifica_distancia():
+        # Desativa o motor 1
+        GPIO.output(m1Ativo, GPIO.LOW)
+
+
+# --------------------------------------------------------------------------------------------------------------------
 # EXECUCAO DO SOFTWARE
 # Nesta parte do modulo e feita a:
 # Selecao da camera: PiCam

@@ -19,7 +19,7 @@ def multplicacao(input):
     resultado = 5*input
     return resultado
 
-print(multplicacao(3))
+print("resultado: ", multplicacao(3))
 
 jumpline()
 
