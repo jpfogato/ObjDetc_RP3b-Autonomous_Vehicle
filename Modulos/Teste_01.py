@@ -22,7 +22,6 @@ m1pwm=GPIO.PWM(m1Velocidade,50) #define o pino m1Velocidade como saida para um P
 m1pwm.ChangeFrequency(50) # define a frequencia em 50Hz
 m1pwm.start(0) #define o dutycycle inicial no motor 1 em 0%
 
-
 # Pinos utilizados pelo MOTOR: VIRAR
 pinoDireita = 20 #GPIO 20 - PINO 38
 pinoEsquerda = 16 #GPIO 16 - PINO 36
@@ -31,7 +30,6 @@ GPIO.setup(pinoDireita,GPIO.OUT) #define o pino pinoDireita como SAIDA
 GPIO.setup(pinoEsquerda,GPIO.OUT) #define o pino pinoEsquerda como SAIDA
 GPIO.output(pinoDireita,GPIO.LOW) #define a SAIDA do pino pinoDireita como BAIXA
 GPIO.output(pinoEsquerda,GPIO.LOW) #define a SAIDA do pino pinoEsquerda como BAIXA
-
 
 # Modulo de testes para validar integracao entre motores e sensor de ultrasom
 
