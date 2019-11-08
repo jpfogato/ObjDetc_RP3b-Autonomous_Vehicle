@@ -66,7 +66,6 @@ while(1):
 
     elif entrada=='n': #caso o usuario digite N o programa e interrompido
         GPIO.output(m1Ativo,GPIO.LOW) #motor 1 parado
-        GPIO.output(M1Tras,GPIO.LOW)
         GPIO.output(pinoDireita,GPIO.LOW) #motor 2 parado
         GPIO.output(pinoEsquerda,GPIO.LOW)
         print("Motores desativados")

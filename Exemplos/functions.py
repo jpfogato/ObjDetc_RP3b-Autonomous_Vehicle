@@ -3,7 +3,6 @@ def jumpline():
 
 def my_function():
     print("Hello World from a function")
-
 my_function()
 
 jumpline()
