@@ -12,7 +12,6 @@
 # 5 - Identificacao da acao de comando por distancia
 # 6 - Conjuncao booleana (imagem E distancia) para identificacao de acao
 # 7 - Execucao da manobra, retorno ao modulo 2
-# 8 - Modulos de teste e debugging
 #
 # Disclaimer: A logica do programa foi elaborada inteiramente pelo gurpo mas
 # diversos exemplos foram consultados. O mais influente deles pode ser encontrado em:
@@ -297,15 +296,3 @@ if camera_type == 'picamera':
     print("dutycycle == 0")
     GPIO.cleanup() #limpa o estado de todos os pinos
     print("GPIO cleanup completado")
-
-# -----------------------------------------------------------------------------
-# TESTES E DEBUGGING
-# Teste 1: ambos os motores para frente ate que alvo esteja a menos de 10cm
-# Teste 2: Inicializa o modelo treinado e testa a deteccao com a camera
-# Remova o comentario das proximas linhas para chamar este modulo
-
-#testes com o GPIO
-import Modulos/Teste_01
-
-#testes de deteccao de modelo
-import Modulos/Teste_02
