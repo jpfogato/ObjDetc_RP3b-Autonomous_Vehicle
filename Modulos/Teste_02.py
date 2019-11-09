@@ -1,12 +1,17 @@
-# Neste modulo e feita a:
-# Selecao da camera: PiCam
-# Identificacao do modelo utilizado
+import os
+import cv2
+import numpy as np
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import tensorflow as tf
+import argparse
+import sys
 
 #seleciona a camera a ser utilizada
 camera_type = 'picamera'
 
 #identifica o modelo
-MODEL_NAME = 'ssdlite_mobilenet_v2_coco_2018_05_09'
+MODEL_NAME = 'placas_model'
 
 #pega o PATH do diretorio atual de trabalho
 CWD_PATH = os.getcwd()
@@ -34,7 +39,7 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
 category_index = label_map_util.create_category_index(categories)
 
 # carrega o modelo do TensorFlow para a memoria
-with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
+#with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
