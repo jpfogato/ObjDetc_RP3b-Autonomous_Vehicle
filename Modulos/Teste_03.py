@@ -24,8 +24,8 @@ pwm.ChangeFrequency(50) # define a frequencia em 50Hz
 pwm.start(0) #define o dutycycle inicial no motor 1 em 0%
 
 # Pinos utilizados pelo motor de propulsao
-direita = 20 #GPIO 20 - PINO 38
-esquerda = 16 #GPIO 16 - PINO 36
+direita = 16 #GPIO 16 - PINO 36
+esquerda = 20 #GPIO 20 - PINO 38
 # Setup dos pinos do motor de virar
 GPIO.setup(direita,GPIO.OUT) #define o pino direita como SAIDA
 GPIO.setup(esquerda,GPIO.OUT) #define o pino esquerda como SAIDA
@@ -41,13 +41,13 @@ GPIO.output(esquerda,GPIO.LOW) #define a SAIDA do pino esquerda como BAIXA
 # Funcao de identificacao de distancia:
 # essa funcao dispara um sinal a partir do pino TRIGGER e aguarda uma resposta no pino ECHO
 # apos isso, conta o tempo do pulso no pino ECHO e determina a distancia em cm
-def indentifica_distancia():
+def identifica_distancia():
     # essa funcao ativa o pino TRIGGER
-    GPIO.output(TRIGGER, True)
+    GPIO.output(TRIGGER, GPIO.HIGH)
     # durante apenas 1us
     time.sleep(0.000001)
     # depois desliga o pino TRIGGER
-    GPIO.output(TRIGGER, False)
+    GPIO.output(TRIGGER, GPIO.LOW)
     # e define que enquanto ECHO possuir um valor logico BAIXO
     while GPIO.input(ECHO) == 0:
         # conta o tempo para usar como timestamp
@@ -89,27 +89,32 @@ def seguir_em_frente(duty_cycle):
     pwm.ChangeDutyCycle(duty_cycle)
 
 # Funcao virar a esquerda
-def virar_a_esquerda():
+def virar_a_esquerda(duty_cycle):
     GPIO.output(esquerda, GPIO.HIGH)
     GPIO.output(direita, GPIO.LOW)
+    # Ativa o motor 1 com o duty cycle informado
+    GPIO.output(frente, GPIO.HIGH)
+    pwm.ChangeDutyCycle(duty_cycle)
 
 # Funcao virar a direita
-def virar_a_direita():
+def virar_a_direita(duty_cycle):
     GPIO.output(esquerda, GPIO.LOW)
     GPIO.output(direita, GPIO.HIGH)
+    # Ativa o motor 1 com o duty cycle informado
+    GPIO.output(frente, GPIO.HIGH)
+    pwm.ChangeDutyCycle(duty_cycle)
 
 # Esta funcao faz o veiculo andar para frente ate que esteja a uma determinada distancia do alvo
 # Argumentos: "Distancia maxima ate o alvo", "duty cycle"
-def andar_ate_alvo(distancia_max_ate_alvo):
+def andar_ate_alvo(distancia_max):
     seguir_em_frente(duty_cycle)
     # se a distancia max ate o alvo >= distancia medida pelo sensor de ultrassom
-    if distancia_max_ate_alvo >= indentifica_distancia():
-        # Desativa o motor de propulsao
-        GPIO.output(frente, GPIO.LOW)
-        # Informa que o alvo foi alcancado
-        return True
-    return False
+    while distancia_max < identifica_distancia():
+        seguir_em_frente(duty_cycle)
+    # Desativa o motor de propulsao
+    parar_veiculo()
 
+        
 def cleanup():
     # Parar motor de propulsao
     GPIO.output(frente,GPIO.LOW)
@@ -124,61 +129,70 @@ def cleanup():
 # TESTES:
 ### -------------------------------------------------------------------------------------------
 
-distancia_max = 10 # centimetros
-duty_cycle = 25 # %
+distancia_max = 35 # centimetros
+duty_cycle = 50 # %
 
-# teste da funcao seguir_em_frente()
-k=0
-while(k<5):
-    k = k+1
-    time.sleep(1)
-    seguir_em_frente(duty_cycle)
-
-parar_veiculo()
-
-# teste da funcao virar_a_direita()
-k=0
-while(k<5):
-    k = k+1
-    time.sleep(1)
-    virar_a_direita()
-
-#teste da funcao virar_a_esquerda()
-k=0
-while(k<5):
-    k = k+1
-    time.sleep(1)
-    virar_a_esquerda()
-
-# virar a esquerda por 1 segundo, aguardar 1 segundo, depois virar a direita por 1 segundo
-# repete por k vezes
-k=0
-while(k<5):
-    k = k+1
-    virar_a_esquerda()
-    time.sleep(1)
-    endireitar_rodas()
-    time.sleep(1)
-    virar_a_direita()
-    time.sleep(1)
-    endireitar_rodas()
-    time.sleep(1)
-
-
-# teste da funcao identifica_distancia()
-# plota k vezes
-k=0
-while(k<20):
-    k = k+1
-    # espera 0,1s antes de executar novamente
-    time.sleep(0.1)
-    # print da distancia em cm no console
-    print("Distancia medida: ", indentifica_distancia(), " cm")
+# # teste da funcao seguir_em_frente()
+# k=0
+# while k<2:
+#     k = k+1
+#     time.sleep(1)
+#     seguir_em_frente(duty_cycle)
+# 
+# parar_veiculo()
+# 
+# # teste da funcao virar_a_direita()
+# k=0
+# while k<2:
+#     k = k+1
+#     virar_a_direita(duty_cycle)
+#     time.sleep(1)
+#     endireitar_rodas()
+# 
+# parar_veiculo()
+# 
+# #teste da funcao virar_a_esquerda()
+# k=0
+# while k<2:
+#     k = k+1
+#     virar_a_esquerda(duty_cycle)
+#     time.sleep(1)
+#     endireitar_rodas()
+# 
+# parar_veiculo()
+# 
+# # virar a esquerda por 1 segundo, aguardar 1 segundo, depois virar a direita por 1 segundo
+# # repete por k vezes
+# k=0
+# while k<2:
+#     k = k+1
+#     virar_a_esquerda(duty_cycle)
+#     time.sleep(1)
+#     endireitar_rodas()
+#     time.sleep(1)
+#     virar_a_direita(duty_cycle)
+#     time.sleep(1)
+#     endireitar_rodas()
+#     time.sleep(1)
+# 
+# parar_veiculo()
+# 
+# # teste da funcao identifica_distancia()
+# # plota k vezes
+# k=0
+# fim_do_pulso = 0
+# inicio_do_pulso = 0
+# while k<5:
+#     k = k+1
+#     # espera 0,1s antes de executar novamente
+#     time.sleep(0.1)
+#     # print da distancia em cm no console
+#     print("Distancia medida: ", identifica_distancia(), " cm")
+    
 
 # teste da funcao andar ate estar proximo do alvo
-while(andar_ate_alvo(distancia_max) == False):
-    seguir_em_frente(duty_cycle)
-    print("Distancia medida: ", indentifica_distancia(), " cm")
+# andar_ate_alvo(distancia_max)
+
 
 parar_veiculo()
 
@@ -186,18 +200,36 @@ parar_veiculo()
 # andar para frente ate a proxima placa, virar a esquerda por 3 segundos,
 # parar o teste
 while(1):
-    while andar_ate_alvo(distancia_max) == False:
-        seguir_em_frente(duty_cycle)
-        print("Distancia medida: ", indentifica_distancia(), " cm")
-    virar_a_esquerda()
+    andar_ate_alvo(distancia_max)
+    
+    parar_veiculo()
+    time.sleep(1)
+    
+
+    
+    virar_a_esquerda(80)
+    
     time.sleep(3)
-    endireitar_rodas()
-    while andar_ate_alvo(distancia_max) == False:
-        seguir_em_frente(duty_cycle)
-        print("Distancia medida: ", indentifica_distancia(), " cm")
-    virar_a_direita()
-    time.sleep(3)
+    
     endireitar_rodas()
     parar_veiculo()
+        
     cleanup()
     break
+
+
+#     endireitar_rodas()
+#     parar_veiculo()
+#     time.sleep(1)
+#     
+#     virar_a_esquerda(duty_cycle)
+#     time.sleep(1)
+#     endireitar_rodas()
+#     seguir_em_frente(duty_cycle)
+#     
+#     andar_ate_alvo(distancia_max)
+#     
+#     virar_a_direita(duty_cycle)
+#     time.sleep(1)
+#     endireitar_rodas()
+#     seguir_em_frente(duty_cycle)
