@@ -3,6 +3,9 @@ import RPi.GPIO as GPIO
 # trabalha com os pinos fisicos atraves da nomenclatura da GPIO
 GPIO.setmode(GPIO.BCM)
 
+#desativa todos os alarmes dos pinos
+GPIO.setwarnings(False)
+
 # Pinos do sensor HC-SR04
 TRIGGER = 17  # GPIO 17 - PINO 11 - usado como fonte de TRIGGER
 ECHO = 4  # GPIO 04 - PINO 07 - usado como recebedor do pulso
