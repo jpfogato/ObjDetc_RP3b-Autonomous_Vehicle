@@ -29,17 +29,6 @@ import tensorflow as tf
 import argparse
 import sys
 
-# # Set up Twilio
-# from twilio.rest import Client
-#
-# # Twilio SID, authentication token, my phone number, and the Twilio phone number
-# # are stored as environment variables on my Pi so people can't see them
-# account_sid = os.environ['TWILIO_ACCOUNT_SID']
-# auth_token = os.environ['TWILIO_AUTH_TOKEN']
-# my_number = os.environ['MY_DIGITS']
-# twilio_number = os.environ['TWILIO_DIGITS']
-
-# client = Client(account_sid, auth_token)
 
 # Set up camera constants
 IM_WIDTH = 800
@@ -172,11 +161,11 @@ def pet_detector(frame):
         line_thickness=8,
         min_score_thresh=0.40)
 
-    # Draw boxes defining "outside" and "inside" locations.
-    cv2.rectangle(frame, TL_outside, BR_outside, (255, 20, 20), 3)
-    cv2.putText(frame, "Outside box", (TL_outside[0] + 10, TL_outside[1] - 10), font, 1, (255, 20, 255), 3, cv2.LINE_AA)
-    cv2.rectangle(frame, TL_inside, BR_inside, (20, 20, 255), 3)
-    cv2.putText(frame, "Inside box", (TL_inside[0] + 10, TL_inside[1] - 10), font, 1, (20, 255, 255), 3, cv2.LINE_AA)
+    # # Draw boxes defining "outside" and "inside" locations.
+    # cv2.rectangle(frame, TL_outside, BR_outside, (255, 20, 20), 3)
+    # cv2.putText(frame, "Outside box", (TL_outside[0] + 10, TL_outside[1] - 10), font, 1, (255, 20, 255), 3, cv2.LINE_AA)
+    # cv2.rectangle(frame, TL_inside, BR_inside, (20, 20, 255), 3)
+    # cv2.putText(frame, "Inside box", (TL_inside[0] + 10, TL_inside[1] - 10), font, 1, (20, 255, 255), 3, cv2.LINE_AA)
 
     # Check the class of the top detected object by looking at classes[0][0].
     # If the top detected object is a cat (17) or a dog (18) (or a teddy bear (88) for test purposes),
