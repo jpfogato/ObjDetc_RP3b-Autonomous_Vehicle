@@ -220,11 +220,6 @@ detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 # Numero de objetos detectados
 num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-# Inicializa a calculadora de framerate
-frame_rate_calc = 1
-freq = cv2.getTickFrequency()
-font = cv2.FONT_HERSHEY_SIMPLEX
-
 # inicializa variaveis de controle para movimentacao
 detected_pare = False
 detected_vir_dir = False
