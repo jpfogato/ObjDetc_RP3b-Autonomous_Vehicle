@@ -1,27 +1,11 @@
-# software disponivel em github.com/jpfogato
-#
-# Este software controla um veiculo autonomo controlado por visao de maquina, com auxilio de rede neural
-# implementada no tensorflow, usando como plataforma o Raspberry Pi
-#
-# Importante:
-# O script deve rodar diretamente na pasta "object_detection" dentro do Raspberry
-#
-# -----------------------------------------------------------------------------
-# SETUP DA APLICACAO
-# Neste modulo e feita a:
-# importacao das bibliotecas necessarias para a execucao do programa,
-# configuracao dos pinos de entrada e saida do Raspberry Pi,
-# definicao da compressao da imagem recebida pela camera (HxV pixels)
-
-import os #biblioteca com funcoes do Linux
-import cv2 #biblioteca com funcoes do OpenCV
-import numpy as np #biblioteca de funcoes e operadores matematicos
-from picamera.array import PiRGBArray #biblioteca com funcoes  de processamento de imagem da PiCam
-from picamera import PiCamera #bliblioteca com funcoes da PiCam
-import tensorflow as tf #biblioteca com funcoes do TensorFlow
-import sys
 import RPi.GPIO as GPIO
 import time
+import os
+import cv2
+import numpy as np
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import tensorflow as tf
 
 # trabalha com os pinos fisicos atraves da nomenclatura da GPIO
 GPIO.setmode(GPIO.BCM)
@@ -52,24 +36,12 @@ esquerda = 20  # GPIO 20 - PINO 38
 GPIO.setup(direita, GPIO.OUT)  # define o pino direita como SAIDA
 GPIO.setup(esquerda, GPIO.OUT)  # define o pino esquerda como SAIDA
 GPIO.output(direita, GPIO.LOW)  # define a SAIDA do pino direita como BAIXA
-GPIO.output(esquerda, GPIO.LOW)  # define a SAIDA do pino esquerda como BAIXA
+GPIO.output(esquerda, GPIO.LOW)  # define a SAIDA do pino esquerda como B
 
 
-# setup de constantes da camera
-IM_WIDTH = 800 #800 pixels horizontais
-IM_HEIGHT = 600 #600 pixels verticais
-
-# adiciona os comandos ao ambiente PATH do Linux
-sys.path.append('..')
-
-# Importa utils do algoritimo de deteccao
-from utils import label_map_util #funcoes de verificacao de labels
-from utils import visualization_utils as vis_util #funcoes de vizualizacao
-
-
-### ----------------------------------------------------------------------
-### FUNÇÕES
-### ----------------------------------------------------------------------
+### -------------------------------------------------------------------------------------------
+# FUNCOES:
+### -------------------------------------------------------------------------------------------
 
 # Esta funcao faz uma pausa na execucao do codigo
 # Argumento: Tempo [s]
@@ -168,43 +140,52 @@ def finalizar():
     endireitar_rodas()
     parar_veiculo()
     cleanup()
-    camera.close()
-
-### ----------------------------------------------------------------------
-### EXECUÇÃO
-### ----------------------------------------------------------------------
 
 #seleciona a camera a ser utilizada
 camera_type = 'picamera'
+
 #identifica o modelo
-MODEL_NAME = 'placas_model'
+MODEL_NAME = 'ssdlite_mobilenet_v2_coco_2018_05_09'
+
 #pega o PATH do diretorio atual de trabalho
 CWD_PATH = os.getcwd()
+
 # PATH do inferece_graph (.pb) que contem o modelo utilizado para deteccao de objetos
 PATH_TO_CKPT = os.path.join(CWD_PATH,MODEL_NAME,'frozen_inference_graph.pb')
+
 # PATH para o arquivo de label map
 PATH_TO_LABELS = os.path.join(CWD_PATH,'data','placas_labelmap.pbtxt')
+
 # Numero de classes detectaveis
 NUM_CLASSES = 3
+
 ## Carregando o Labelmap
+# O indice do labelmap relaciona com um nome de categoria, entao quando a rede
+# convolucional preve um '1', sabemos que isso corresponde a placa de 'pare'.
+
+# carrega o labelmap dentro da variavel 'label_map'
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
+
 # converte os labelmaps em categorias e adiciona a variavel 'categories'
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
-# cria um indice de categorias baseado na variavel 'categories': '1' = PARE | '2' = VIR_DIR | '3' = VIR_ESQ.
+
+# cria um indice de categorias baseado na variavel 'categories'
 category_index = label_map_util.create_category_index(categories)
 
 # carrega o modelo do TensorFlow para a memoria
-detection_graph = tf.Graph()
-with detection_graph.as_default():
-    od_graph_def = tf.GraphDef()
-    with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
-        serialized_graph = fid.read()
-        od_graph_def.ParseFromString(serialized_graph)
-        tf.import_graph_def(od_graph_def, name='')
+with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
+    detection_graph = tf.Graph()
+    with detection_graph.as_default():
+        od_graph_def = tf.GraphDef()
+        with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+            serialized_graph = fid.read()
+            od_graph_def.ParseFromString(serialized_graph)
+            tf.import_graph_def(od_graph_def, name='')
 
-    sess = tf.Session(graph=detection_graph)
+        sess = tf.Session(graph=detection_graph)
 
 # Define os Tensores de entrada e saida (dados) para o classificador
+
 # Tensor de entrada e a imagem
 image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
 
@@ -220,72 +201,7 @@ detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 # Numero de objetos detectados
 num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-# inicializa variaveis de controle para movimentacao
-detected_pare = False
-detected_vir_dir = False
-detected_vir_esq = False
-pause = 0
-pause_counter = 0
-
-
-# essa funcao contem o codigo para detectar 3 placas e determinar o momvimento
-def detector_placas(frame, pause):
-    # use variaveis globais para que elas retenham o valor apos a execucao da funcao
-    global detected_pare, detected_vir_dir, detected_vir_esq
-    global pause, pause_counter
-    frame_expanded = np.expand_dims(frame, axis=0)
-    #executa a deteccao rodando o modelo com a imagem como input
-    (boxes, scores, classes, num) = sess.run(
-        [detection_boxes, detection_scores, detection_classes, num_detections],
-        feed_dict={image_tensor: frame_expanded})
-    # #apresenta os resultados da deteccao na tela
-    vis_util.visualize_boxes_and_labels_on_image_array(
-        frame,
-        np.squeeze(boxes),
-        np.squeeze(classes).astype(np.int32),
-        np.squeeze(scores),
-        category_index,
-        use_normalized_coordinates=True,
-        line_thickness=8,
-        min_score_thresh=0.40)
-    #se a classe detectada for 1, 2 ou 3, incremenda o contador
-    if classes[0][0]==1 and pause==0:
-        counter_pare = counter_pare + 1
-    elif classes[0][0]==2 and pause==0:
-        counter_vir_esq = counter_vir_esq + 1
-    elif classes[0][0]==3 and pause==0:
-        counter_vir_dir = counter_vir_dir + 1
-    # se a placa ficar por mais de 10 frames na imagem
-    if counter_pare > 10:
-        detected_pare = True
-        print("detected_pare")
-        counter_pare = 0
-        # Pausa a deteccao ao setar o flag "pause"
-        pause = 1
-    if counter_vir_esq > 10:
-        detected_vir_esq = True
-        print("detected_vir_esq")
-        counter_vir_esq = 0
-        # Pausa a deteccao ao setar o flag "pause"
-        pause = 1
-    if counter_vir_dir > 10:
-        detected_vir_dir = True
-        print("detected_vir_dir")
-        counter_vir_dir = 0
-        # Pausa a deteccao ao setar o flag "pause"
-        pause = 1
-    # Incrementa o contador "pause" ate chegar em 5
-    # (com um framerate de 1.5 FPS, this e aproximadamente 2 segundos),
-    # Entao despausa a aplicacao (set pause = 0).
-    if pause == 1:
-        pause_counter = pause_counter + 1
-        if pause_counter > 5:
-            pause = 0
-            pause_counter = 0
-            detected_pare = False
-            detected_vir_dir = False
-            detected_vir_esq = False
-    return frame
+# Inicializa a camera e inicia a deteccao de objetos
 
 if camera_type == 'picamera':
     # Inicializa a PiCam e pega a referencia para os dados da captura
@@ -294,26 +210,75 @@ if camera_type == 'picamera':
     camera.framerate = 10
     rawCapture = PiRGBArray(camera, size=(IM_WIDTH,IM_HEIGHT))
     rawCapture.truncate(0)
-    # Continuamente executa a captura de imagens e aplica a deteccao de objetos nela
+
+pause = 0
+count_vir_dir = 0
+count_vir_esq = 0
+count_pare = 0
+placa_vir_dir = False
+placa_vir_esq = False
+placa_pare = False
+distancia_minima = 30
+duty_cycle = 50
+tempo_de_pausa = 5
+
     for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
-        # t1 = cv2.getTickCount()
-        # Adquire o frame e expande as dimensoes para ter o formato: [1, None, None, 3]
-        # um vetor de coluna unica, onde cada item na coluna tem o valor RGB do pixel
-        frame = frame1.array
+
+        t1 = cv2.getTickCount()
+
+        # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
+        # i.e. a single-column array, where each item in the column has the pixel RGB value
+        frame = np.copy(frame1.array)
         frame.setflags(write=1)
-        # passa o frame dentro da funcao de deteccao
-        frame = detector_placas(frame, 0)
-        # Mostra o FPS
-        #cv2.putText(frame,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA)
-        # Mostra todos os resultados.
-        #cv2.imshow('Object detector', frame)
-        # Calculo do FPS
-        #t2 = cv2.getTickCount()
-        #time1 = (t2-t1)/freq
-        #frame_rate_calc = 1/time1
-        # Pressione Q para parar
-        if cv2.waitKey(1) == ord('q'):
+        frame_expanded = np.expand_dims(frame, axis=0)
+
+        # Perform the actual detection by running the model with the image as input
+        (boxes, scores, classes, num) = sess.run(
+            [detection_boxes, detection_scores, detection_classes, num_detections],
+            feed_dict={image_tensor: frame_expanded})
+
+        if double(classes[0][0]) == 1 and scores[0][0] >= 0.7
+            count_vir_dir = count_vir_dir +1
+        elif double(classes[0][0]) == 2 and scores[0][0] >= 0.7
+            count_vir_esq = count_vir_esq +1
+        elif double(classes[0][0]) == 3 and scores[0][0] >= 0.7
+            count_pare = count_pare +1
+        else:
+            print("nenhuma placa detectada")
+
+        if count_vir_dir >= 10 #placa vir dir detectada por 10 ou mais frames
+            placa_vir_dir = True
+            count_vir_dir = 0
+        elif count_vir_esq >= 10 #placa vir_esq detectada por 10 ou mais frames
+            placa_vir_esq = True
+            count_vir_esq = 0
+        elif count_pare >=10 #placa pare detectada por 10 frames ou mais
+            placa_pare = True
+            count_pare = 0
+        else:
+            placa_vir_dir = False
+            placa_vir_esq = False
+            placa_pare = False
+
+        while True:
+            if placa_vir_dir == True and identifica_distancia() <= distancia_minima:
+                virar_a_direita(duty_cycle)
+                pausa(tempo_de_pausa)
+                endireitar_rodas()
+            elif placa_vir_esq == True and identifica_distancia() <= distancia_minima:
+                virar_a_esquerda(duty_cycle)
+                pausa(tempo_de_pausa)
+                endireitar_rodas()
+            elif placa_pare == True and identifica_distancia() <= distancia_minima:
+                 parar_veiculo()
+                 endireitar_rodas()
+                 pausa(tempo_de_pausa)
+            else:
+                andar_ate_alvo(distancia_minima)
             break
+
         rawCapture.truncate(0)
 
-    finalizar()
+    camera.close()
+
+# adicionar logica para identificar chave de ativacao e desativação
