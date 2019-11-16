@@ -1,11 +1,6 @@
-import os
-import cv2
-import numpy as np
-from picamera.array import PiRGBArray
-from picamera import PiCamera
-import tensorflow as tf
-import argparse
-import sys
+# Neste modulo e feita a:
+# Selecao da camera: PiCam
+# Identificacao do modelo utilizado
 
 #seleciona a camera a ser utilizada
 camera_type = 'picamera'
@@ -39,7 +34,7 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
 category_index = label_map_util.create_category_index(categories)
 
 # carrega o modelo do TensorFlow para a memoria
-#with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
+with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
@@ -97,29 +92,29 @@ if camera_type == 'picamera':
             [detection_boxes, detection_scores, detection_classes, num_detections],
             feed_dict={image_tensor: frame_expanded})
 
-        # Draw the results of the detection (aka 'visulaize the results')
-        vis_util.visualize_boxes_and_labels_on_image_array(
-            frame,
-            np.squeeze(boxes),
-            np.squeeze(classes).astype(np.int32),
-            np.squeeze(scores),
-            category_index,
-            use_normalized_coordinates=True,
-            line_thickness=8,
-            min_score_thresh=0.40)
-
-        cv2.putText(frame,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA)
-
-        # All the results have been drawn on the frame, so it's time to display it.
-        cv2.imshow('Object detector', frame)
-
-        t2 = cv2.getTickCount()
-        time1 = (t2-t1)/freq
-        frame_rate_calc = 1/time1
-
-        # Press 'q' to quit
-        if cv2.waitKey(1) == ord('q'):
-            break
+        # # Draw the results of the detection (aka 'visulaize the results')
+        # vis_util.visualize_boxes_and_labels_on_image_array(
+        #     frame,
+        #     np.squeeze(boxes),
+        #     np.squeeze(classes).astype(np.int32),
+        #     np.squeeze(scores),
+        #     category_index,
+        #     use_normalized_coordinates=True,
+        #     line_thickness=8,
+        #     min_score_thresh=0.40)
+        #
+        # cv2.putText(frame,"FPS: {0:.2f}".format(frame_rate_calc),(30,50),font,1,(255,255,0),2,cv2.LINE_AA)
+        #
+        # # All the results have been drawn on the frame, so it's time to display it.
+        # cv2.imshow('Object detector', frame)
+        #
+        # t2 = cv2.getTickCount()
+        # time1 = (t2-t1)/freq
+        # frame_rate_calc = 1/time1
+        #
+        # # Press 'q' to quit
+        # if cv2.waitKey(1) == ord('q'):
+        #     break
 
         rawCapture.truncate(0)
 
