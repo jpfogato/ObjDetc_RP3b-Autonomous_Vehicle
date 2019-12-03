@@ -52,6 +52,9 @@ def pausa(tempo):
 # essa funcao dispara um sinal a partir do pino TRIGGER e aguarda uma resposta no pino ECHO
 # apos isso, conta o tempo do pulso no pino ECHO e determina a distancia em cm
 def identifica_distancia():
+    global inicio_do_pulso
+    global fim_do_pulso
+    global duracao_do_pulso
     # essa funcao ativa o pino TRIGGER
     GPIO.output(TRIGGER, GPIO.HIGH)
     # durante apenas 1us
@@ -141,6 +144,12 @@ def finalizar():
     parar_veiculo()
     cleanup()
 
+# esta funcao reseta os contadores
+def resetar_contadores():
+    count_pare = 0
+    count_vir_esq = 0
+    count_vir_dir = 0
+
 #seleciona a camera a ser utilizada
 camera_type = 'picamera'
 
@@ -173,16 +182,16 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
 category_index = label_map_util.create_category_index(categories)
 
 # carrega o modelo do TensorFlow para a memoria
-with tf.Graph().as_default() #wrapper que compatibiliza com TF2.0
-    detection_graph = tf.Graph()
-    with detection_graph.as_default():
-        od_graph_def = tf.GraphDef()
-        with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
-            serialized_graph = fid.read()
-            od_graph_def.ParseFromString(serialized_graph)
-            tf.import_graph_def(od_graph_def, name='')
 
-        sess = tf.Session(graph=detection_graph)
+detection_graph = tf.Graph()
+with detection_graph.as_default():
+    od_graph_def = tf.GraphDef()
+    with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+        serialized_graph = fid.read()
+        od_graph_def.ParseFromString(serialized_graph)
+        tf.import_graph_def(od_graph_def, name='')
+
+    sess = tf.Session(graph=detection_graph)
 
 # Define os Tensores de entrada e saida (dados) para o classificador
 
@@ -218,11 +227,11 @@ count_pare = 0
 placa_vir_dir = False
 placa_vir_esq = False
 placa_pare = False
-distancia_minima = 30
-duty_cycle = 50
-tempo_de_pausa = 5
+distancia_minima = 40
+duty_cycle = 60
+tempo_de_pausa = 4
 
-    for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
+for frame1 in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
 
         t1 = cv2.getTickCount()
 
@@ -237,24 +246,24 @@ tempo_de_pausa = 5
             [detection_boxes, detection_scores, detection_classes, num_detections],
             feed_dict={image_tensor: frame_expanded})
 
-        if double(classes[0][0]) == 1 and scores[0][0] >= 0.7
+        if double(classes[0][0]) == 1 and scores[0][0] >= 0.3:
             count_vir_dir = count_vir_dir +1
-        elif double(classes[0][0]) == 2 and scores[0][0] >= 0.7
+        elif double(classes[0][0]) == 2 and scores[0][0] >= 0.6:
             count_vir_esq = count_vir_esq +1
-        elif double(classes[0][0]) == 3 and scores[0][0] >= 0.7
+        elif double(classes[0][0]) == 3 and scores[0][0] >= 0.5:
             count_pare = count_pare +1
         else:
             print("nenhuma placa detectada")
 
-        if count_vir_dir >= 10 #placa vir dir detectada por 10 ou mais frames
+        if count_vir_dir >= 10: #placa vir dir detectada por 10 ou mais frames
             placa_vir_dir = True
-            count_vir_dir = 0
-        elif count_vir_esq >= 10 #placa vir_esq detectada por 10 ou mais frames
+            resetar_contadores()
+        elif count_vir_esq >= 10: #placa vir_esq detectada por 10 ou mais frames
             placa_vir_esq = True
-            count_vir_esq = 0
-        elif count_pare >=10 #placa pare detectada por 10 frames ou mais
+            resetar_contadores()
+        elif count_pare >=10: #placa pare detectada por 10 frames ou mais
             placa_pare = True
-            count_pare = 0
+            resetar_contadores()
         else:
             placa_vir_dir = False
             placa_vir_esq = False
@@ -278,7 +287,5 @@ tempo_de_pausa = 5
             break
 
         rawCapture.truncate(0)
-
-    camera.close()
-
-# adicionar logica para identificar chave de ativacao e desativação
+        
+        camera.close()
